@@ -30,6 +30,8 @@ Options:
   --skip-default-install
                       Disable 'npm install' phase of application deployments
                       made on this PM.
+  --in-memory-db      Persist deployment information and metrics in a in-memory
+                      database. Not recommended for production use.
 
 OS Service support:
 

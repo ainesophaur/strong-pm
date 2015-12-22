@@ -45,6 +45,7 @@ var parser = new Parser(
     'N:(no-control)', // unused. left for backwards compat.
     's(skip-default-install)',
     'P:(base-port)',
+    'M(in-memory-db)',
   ].join(''),
   argv);
 
@@ -52,6 +53,7 @@ var base = home('.strong-pm');
 var listen = 8701;
 var driver = DRIVERS.direct;
 var basePort = Number(process.env.STRONGLOOP_BASEPORT) || 3000;
+var dbDriver = 'sqlite3';
 
 var option;
 while ((option = parser.getopt()) !== undefined) {
@@ -84,6 +86,9 @@ while ((option = parser.getopt()) !== undefined) {
     case 'P':
       basePort = option.optarg;
       break;
+    case 'M':
+      dbDriver = 'memory';
+      break;
     default:
       console.error('Invalid usage (near option \'%s\'), try `%s --help`.',
         option.optopt, $0);
@@ -114,6 +119,7 @@ var app = new Server({
   basePort: basePort,
   cmdName: $0,
   listenPort: listen,
+  DbDriver: dbDriver,
 });
 
 app.on('listening', function(listenAddr) {
