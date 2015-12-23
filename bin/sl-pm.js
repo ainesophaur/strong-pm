@@ -45,7 +45,7 @@ var parser = new Parser(
     'N:(no-control)', // unused. left for backwards compat.
     's(skip-default-install)',
     'P:(base-port)',
-    'M(in-memory-db)',
+    'M(json-file-db)',
   ].join(''),
   argv);
 
@@ -112,6 +112,18 @@ if (listen == null) {
 mkdirp(base);
 process.chdir(base);
 
+var sqliteDbPath = path.join(base, 'strong-mesh.db');
+fs.stat(sqliteDbPath, function(err) {
+  if (!err && dbDriver === 'memory') {
+    console.error(
+      '%s(%d) SQLite3 database found at %s. Please delete this' +
+      'file if you wish to use the JSON file database.',
+      $0, process.pid, sqliteDbPath
+    );
+    process.exit(1);
+  }
+});
+
 var app = new Server({
   // Choose driver based on cli options/env once we have alternate drivers.
   Driver: driver,
@@ -119,7 +131,7 @@ var app = new Server({
   basePort: basePort,
   cmdName: $0,
   listenPort: listen,
-  DbDriver: dbDriver,
+  dbDriver: dbDriver,
 });
 
 app.on('listening', function(listenAddr) {

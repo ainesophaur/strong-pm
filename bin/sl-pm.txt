@@ -13,7 +13,7 @@ Options:
   --skip-default-install
                       Disable 'npm install' phase of application deployments
                       made on this PM.
-  --in-memory-db      Persist deployment information and metrics in a in-memory
+  --json-file-db      Persist deployment information and metrics in a JSON based
                       database. Not recommended for production use.
 
 The base directory is used to save deployed applications, for working
