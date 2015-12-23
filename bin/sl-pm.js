@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+var upgradeDb = require('../lib/upgrade-db');
+
 // Exit on loss of parent process, if it had established an ipc control channel.
 // We do this ASAP because we don't want child processes to leak, outliving
 // their parent. If the parent has not established an 'ipc' channel to us, this
@@ -112,54 +114,67 @@ if (listen == null) {
 mkdirp(base);
 process.chdir(base);
 
-var sqliteDbPath = path.join(base, 'strong-mesh.db');
-fs.stat(sqliteDbPath, function(err) {
-  if (!err && dbDriver === 'memory') {
-    console.error(
-      '%s(%d) SQLite3 database found at %s. Please delete this' +
-      'file if you wish to use the JSON file database.',
-      $0, process.pid, sqliteDbPath
-    );
-    process.exit(1);
-  }
-});
+if (dbDriver === 'sqlite3') {
+  checkAndUpgradeDb(base, function(err) {
+    if (err) {
+      console.error('%s(%d) %s', $0, process.pid, err.message);
+      process.exit(1);
+    }
+    startPm();
+  });
+} else {
+  var sqliteDbPath = path.join(base, 'strong-mesh.db');
+  fs.stat(sqliteDbPath, function(err) {
+    if (!err) {
+      console.error(
+        '%s(%d) SQLite3 database found at %s. Please delete this' +
+        'file if you wish to use the JSON file database.',
+        $0, process.pid, sqliteDbPath
+      );
+      process.exit(1);
+    }
+    startPm();
+  });
+}
 
-var app = new Server({
-  // Choose driver based on cli options/env once we have alternate drivers.
-  Driver: driver,
-  baseDir: base,
-  basePort: basePort,
-  cmdName: $0,
-  listenPort: listen,
-  dbDriver: dbDriver,
-});
+function startPm() {
+  var app = new Server({
+    // Choose driver based on cli options/env once we have alternate drivers.
+    Driver: driver,
+    baseDir: base,
+    basePort: basePort,
+    cmdName: $0,
+    listenPort: listen,
+    dbDriver: dbDriver,
+  });
 
-app.on('listening', function(listenAddr) {
-  console.log('%s(%d): StrongLoop PM v%s (API v%s) on port `%s`',
-    $0, process.pid,
-    versionPm,
-    versionApi,
-    listenAddr.port);
+  app.on('listening', function(listenAddr) {
+    console.log('%s(%d): StrongLoop PM v%s (API v%s) on port `%s`',
+      $0, process.pid,
+      versionPm,
+      versionApi,
+      listenAddr.port);
 
-  console.log('%s(%d): Base folder `%s`',
-    $0, process.pid, base);
+    console.log('%s(%d): Base folder `%s`',
+      $0, process.pid, base);
 
-  console.log('%s(%d): Applications on port `%d + service ID`',
-    $0, process.pid, basePort);
-});
+    console.log('%s(%d): Applications on port `%d + service ID`',
+      $0, process.pid, basePort);
+  });
 
-app.start();
+  app.start();
 
-// XXX stop just signals the supervisor with SIGTERM, and closes sockets.
-// the socket close won't even complete while there are open connections...,
-// which may happen if exec keeps a persistent ipc connection on pm. I'm
-// not sure there is any point to this anymore, now what we only support
-// supervisor as a runner, and supervisor exits when the parent exits. I think
-// we can just let the signal terminate us, the OS will close sockets, and
-// supervisor will exit itself.
-//
-// A fair amount of code dribbles down from this point that could be deleted.
-stopWhenDone($0, app);
+  // XXX stop just signals the supervisor with SIGTERM, and closes sockets.
+  // the socket close won't even complete while there are open connections...,
+  // which may happen if exec keeps a persistent ipc connection on pm. I'm
+  // not sure there is any point to this anymore, now what we only support
+  // supervisor as a runner, and supervisor exits when the parent exits. I think
+  // we can just let the signal terminate us, the OS will close sockets, and
+  // supervisor will exit itself.
+  //
+  // A fair amount of code dribbles down from this point that could be deleted.
+  stopWhenDone($0, app);
+}
 
 
 function stopWhenDone(/* $0, app */) {
@@ -186,4 +201,13 @@ function stopWhenDone(/* $0, app */) {
     app.stop();
   });
   */
+}
+
+function checkAndUpgradeDb(baseDir, callback) {
+  var memoryDbLocation = process.env.STRONGLOOP_MESH_DB ||
+    path.join(baseDir, 'strong-mesh.json');
+  fs.stat(memoryDbLocation, function(err) {
+    if (err) return callback();
+    upgradeDb(baseDir, memoryDbLocation, false, callback);
+  });
 }

@@ -36,6 +36,7 @@ test('service environment', function(t) {
 
   t.test('empty initial environment', function(tt) {
     mktmpdir(function(err, tmpdir, cleanup) {
+      tt.ifError(err);
       tt.on('end', cleanup);
       fs.writeFileSync(path.join(tmpdir, 'env.json'), '{}');
 

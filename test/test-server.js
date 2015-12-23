@@ -162,7 +162,7 @@ tap.test('server test', function(t) {
   //  tt.equal(s.dumpInstanceLog(instId), 'LOG',
   //    'dumpInstanceLog: log must match');
   //
-  //  // TODO cover the rest of the methods. Could also cover the error branches,
+  //  // TODO cover the rest of the methods. Could also cover the error branches
   //  // I wish I had code coverage metrics :-(
   //  async.series([
   //    s.startInstance.bind(s, instId),
