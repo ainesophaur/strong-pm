@@ -6,7 +6,7 @@ DOCKER=$(which docker)
 INIT=none
 STOP=
 
-IMAGE=strongloop/strong-pm
+IMAGE=ainesophaur/strong-pm
 CONTAINER=strong-pm-container
 CONTAINER_ENVS=
 
